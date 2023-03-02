@@ -114,6 +114,10 @@ def getClosestHour(hours):
 def waitUntil(start):
     now = datetime.now()
 
+    #* for testing
+    start_hour_string = '17:00:00'
+    now = datetime.strptime(f'{datetime.now().strftime("%d/%m/%y")} {start_hour_string}', '%d/%m/%y %H:%M:%S')
+
     if start > now:
         print(f'sleeping until lesson starts')
         time.sleep((start - now).total_seconds())
@@ -142,17 +146,58 @@ def loginToSystem(login, password):
 
 def startLesson():
     print('\nLoading page...')
+
+    lessonData = []
+
     while True:
         try:
             wait.until_not(
                 EC.visibility_of_element_located((By.ID, 'loader'))
             )
-            lecture_button = driver.find_element(By.CLASS_NAME, 'timeline-content')
+            event_calendar = driver.find_element(
+                By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/ul/li[3]/a')
             break
         except:
             pass
 
-    lecture_button.click()
+    event_calendar.click()
+    thead_parent = driver.find_elements(
+                By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/div/div[3]/div/div[2]/div/table/thead/tr/td/div/table/thead/tr/th')
+
+    index = 0
+    for th in thead_parent:
+        print(th.get_attribute("class"))
+        if('fc-today' in th.get_attribute('class')):
+            break
+        index += 1
+    
+    print('Index: ', index)
+
+    allLessons = driver.find_elements(
+        By.XPATH, f'/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/div/div[3]/div/div[2]/div/table/tbody/tr/td/div/div/div[3]/table/tbody/tr/td[{index + 1}]/div/div[2]/a'
+    )
+
+    for lesson in allLessons:
+        lessonTime = lesson.find_element(By.CLASS_NAME, 'fc-time')
+        lessonStartTime = lessonTime.get_attribute('data-start')
+        lessonEndTime   = lessonTime.get_attribute('data-full')[8:]
+        lessonTitle = lesson.find_element(By.CLASS_NAME, 'fc-title')
+        lessonIndex = allLessons.index(lesson)
+
+        lessonData.append({
+            "lessonTime" : lessonTime.text,
+            "lessonStartTime" : lessonStartTime,
+            "lessonEndTime" : lessonEndTime,
+            "lessonTitle" : lessonTitle.text.split('\n'),
+            "index" : lessonIndex,
+        })
+    
+    #TODO: Eğer şimdiki zaman ders zamanın içindeyse o dersi aç, değilse o ders bilgileri sil ve sonrakini kontrol et
+
+    for data in lessonData:
+        print(data)
+
+    
     print('Page loaded')
     wait.until(
         EC.element_to_be_clickable((By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div/div/table/tbody/tr/td[5]/a'))
