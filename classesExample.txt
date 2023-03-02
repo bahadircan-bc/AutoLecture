@@ -1,0 +1,7 @@
+rename this folder to classes.txt and write you hours in format given below
+
+Monday 11:00:00 15:00:00
+Tuesday 13:00:00
+Wednesday 09:00:00 13:00:00 15:00:00
+Thursday 10:00:00 14:00:00 17:00:00
+Friday

@@ -6,9 +6,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import time
 
-# fTODO: Когда дни пустые
-# TODO: Копирование с сайта
+# fTODO: Empty days errors
+# TODO: Copy lesson hours from site
+# TODO: Join late lessons too anyway (if seccondLessonHour < firstLesson hour -> remove fistLesson start second)
+# TODO: txt source files: catch wrong format errors. exm: tab, multi space etc.
 
+#FIXME: sonraki ders başlayınca kod sıfırdan ilerlemeye çalışıyor ama bot artık lesson sayfasında beliyor. O sayfadan ya geri gitmesi gerek ya da en baştan başlaması gerek. Geri gidecekse de belirli saatte refresh atmalı
 
 def getTodaysLessonHours():
     dateNow = datetime.now()
@@ -47,7 +50,7 @@ def getLoginAndPassword():
     password = ''
 
     try:
-        with open('classes.txt') as file:
+        with open('account.txt') as file:
             lines = file.readlines()
 
             for line in lines:
@@ -129,7 +132,7 @@ def loginToSystem(login, password):
     login_button = wait.until(
         EC.element_to_be_clickable((By.TAG_NAME, 'button'))
     )
-    textbox_mail.send_keys(login)
+    textbox_mail.send_keys(login) 
     textbox_password.send_keys(password)
     login_button.click()
     
@@ -200,6 +203,8 @@ if __name__ == '__main__':
         startHour = datetime.strptime(
             f'{datetime.now().strftime("%d/%m/%y")} {hour}', '%d/%m/%y %H:%M:%S')
         
+        waitUntil(startHour)
+        
         try:
             loginToSystem(login, password)
             startLesson()
@@ -210,6 +215,5 @@ if __name__ == '__main__':
             driver.quit()
             exit()
     
-        waitUntil(startHour)
     driver.quit()
     exit()
