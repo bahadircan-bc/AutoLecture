@@ -6,46 +6,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime
 import time
 
-# fTODO: Empty days errors
-# TODO: Copy lesson hours from site
-# TODO: Join late lessons too anyway (if seccondLessonHour < firstLesson hour -> remove fistLesson start second)
-# TODO: txt source files: catch wrong format errors. exm: tab, multi space etc.
+#TODO: Eğer account file yoksa yaratsın ve console'a o file'a password ve login girmseini istesin
+#TODO: kalan fonklarin descr yazmak
 
-#FIXME: sonraki ders başlayınca kod sıfırdan ilerlemeye çalışıyor ama bot artık lesson sayfasında beliyor. O sayfadan ya geri gitmesi gerek ya da en baştan başlaması gerek. Geri gidecekse de belirli saatte refresh atmalı
-
-def getTodaysLessonHours():
-    dateNow = datetime.now()
-    currentDay = dateNow.strftime("%A")
-
-    def dateSort(date):
-        return datetime.strptime(date, '%H:%M:%S')
-    
-    with open('classes.txt') as file:
-        lines = file.readlines()
-        for line in lines:
-            line = line.strip()
-
-            # Eğer gün ya da saat yoksa
-            if currentDay in line and currentDay != line:
-                try:
-                    lecture_hours = line.split(' ')[1:]
-                    lecture_hours.sort(key=dateSort)
-                    break
-                except:
-                    print('!!! WARNING !!!')
-                    print('Incorrect time format\n')
-                    print('Please write in that form:')
-                    print('  Day time1 time2 ... timeN\n')
-                    print('Example:')
-                    print('  Monday 09:00:00 10:00:00 15:30:00\n')
-                    exit()
-        else:
-            print('No lecture today')
-            exit()
-
-    return lecture_hours
 
 def getLoginAndPassword():
+    """ opens account.txt and searches for strings containing 
+    Password and Login takes the value following them and returns 
+    as a pair login, password
+    """
     login = ''
     password = ''
 
@@ -85,46 +54,32 @@ def getLoginAndPassword():
     return (login, password)
 
 
+def createTimeObject(hour):
+    return datetime.strptime(
+        f'{datetime.now().strftime("%d/%m/%y")} {hour}', '%d/%m/%y %H:%M'
+    )
 
-def getClosestHour(hours):
-    #* Şu anki saate en yakın saati buluyor ve bu saat ve sonrasını döndürüyor
 
-    # test için
-    # start_hour_string = '10:00:00'
-    # now = datetime.strptime(f'{datetime.now().strftime("%d/%m/%y")} {start_hour_string}', '%d/%m/%y %H:%M:%S')
-    # dateNowInMin = now.hour * 60 + now.minute
+def setupDriver():
+    print('Connetcting driver...')
+    global driver, wait, original_window
+
+    driver  = webdriver.Firefox()
+    wait    = WebDriverWait(driver, 60)
+
+    driver.implicitly_wait(10)
+    driver.get('https://online.yildiz.edu.tr')
+    original_window = driver.current_window_handle
     
-    dateNowInMin = datetime.now().hour * 60 + datetime.now().minute
-    diff = 99999
-    index = -1
-
-    for hour in hours:
-        start_time = datetime.strptime(hour, '%H:%M:%S')
-        lessonHourInMin = start_time.hour * 60 + start_time.minute
-        # print(f'Lesson hour {hour} in minutes - {lessonHourInMin}')
-        
-        if diff > abs(lessonHourInMin - dateNowInMin):
-            diff = abs(lessonHourInMin - dateNowInMin)
-            index = hours.index(hour)
-        
-    return hours[index:]
-
-
-
-def waitUntil(start):
-    now = datetime.now()
-
-    #* for testing
-    start_hour_string = '17:00:00'
-    now = datetime.strptime(f'{datetime.now().strftime("%d/%m/%y")} {start_hour_string}', '%d/%m/%y %H:%M:%S')
-
-    if start > now:
-        print(f'sleeping until lesson starts')
-        time.sleep((start - now).total_seconds())
-
+    if driver != 0:
+        print('Driver succesfully connected!')
 
 
 def loginToSystem(login, password):
+    """Finds the login and password field and enters 
+    the login and password passed to this function there. 
+    Then he presses the login button.
+    """
     print('\nAttempt to login ...')
 
     textbox_mail = wait.until(
@@ -143,11 +98,11 @@ def loginToSystem(login, password):
     print('Succeful login')
 
 
-
-def startLesson():
+def openEventCalendar():
+    """
+    Waiting for the end of the multi-layer loader. After finishing, it goes to the event page.
+    """
     print('\nLoading page...')
-
-    lessonData = []
 
     while True:
         try:
@@ -161,52 +116,109 @@ def startLesson():
             pass
 
     event_calendar.click()
+    print('Event calendar page loaded')
+
+
+def getLessonsData():
+    lessonData = []
+    
+    #* Bütün günleri tutan parent
     thead_parent = driver.find_elements(
                 By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/div/div[3]/div/div[2]/div/table/thead/tr/td/div/table/thead/tr/th')
 
+
+    #* Bizim gübü temsil eden th ve onun indexi
     index = 0
     for th in thead_parent:
-        print(th.get_attribute("class"))
+        # print(th.get_attribute("class"))fc-thu
+
+        #? For testing
+        # if('fc-thu' in th.get_attribute('class')):
         if('fc-today' in th.get_attribute('class')):
             break
         index += 1
     
-    print('Index: ', index)
 
-    allLessons = driver.find_elements(
-        By.XPATH, f'/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/div/div[3]/div/div[2]/div/table/tbody/tr/td/div/div/div[3]/table/tbody/tr/td[{index + 1}]/div/div[2]/a'
-    )
+    #* th ile aynı satırdaki td'nın linkleri. Bu linkler bizim derseri temsil ederler
+    try:
+        allLessons = driver.find_elements(
+            By.XPATH, f'/html/body/main/div/div[1]/div/div[7]/div/div/div/div[2]/div/div[3]/div/div[2]/div/table/tbody/tr/td/div/div/div[3]/table/tbody/tr/td[{index + 1}]/div/div[2]/a'
+        )
+        # print(allLessons)
+    except:
+        print('No lecture today')
+        driver.quit()
+        exit()
 
+    index = 0
     for lesson in allLessons:
-        lessonTime = lesson.find_element(By.CLASS_NAME, 'fc-time')
+
+        lessonTime      = lesson.find_element(By.CLASS_NAME, 'fc-time')
         lessonStartTime = lessonTime.get_attribute('data-start')
         lessonEndTime   = lessonTime.get_attribute('data-full')[8:]
-        lessonTitle = lesson.find_element(By.CLASS_NAME, 'fc-title')
-        lessonIndex = allLessons.index(lesson)
+        lessonTitle     = lesson.find_element(By.CLASS_NAME, 'fc-title')
 
         lessonData.append({
-            "lessonTime" : lessonTime.text,
-            "lessonStartTime" : lessonStartTime,
-            "lessonEndTime" : lessonEndTime,
-            "lessonTitle" : lessonTitle.text.split('\n'),
-            "index" : lessonIndex,
+            "index" : index,
+
+            "linkObj"   : lesson,
+            "startTime" : lessonStartTime,
+            "endTime"   : lessonEndTime,
+
+            "time"  : lessonTime.text,
+            "title" : lessonTitle.text.split('\n'),
         })
-    
-    #TODO: Eğer şimdiki zaman ders zamanın içindeyse o dersi aç, değilse o ders bilgileri sil ve sonrakini kontrol et
 
-    for data in lessonData:
-        print(data)
-
+        index += 1
     
-    print('Page loaded')
-    wait.until(
-        EC.element_to_be_clickable((By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div/div/table/tbody/tr/td[5]/a'))
-    ).click()
-    print('Lesson starting...')
+    return lessonData
+
+
+def getAvailableLessons():
+    print("\nGet available lessons...")
+    lessonData = getLessonsData()
+
+    if len(lessonData) == 0:
+        print('No lecture today...')
+        driver.quit()
+        exit()
+
+    currentTime = datetime.now()
+
+    index = 0
+
+    for lesson in lessonData:
+        lessonEndTime = createTimeObject(lesson["endTime"])
+
+        if currentTime > lessonEndTime:
+            index += 1
+        else:
+            break
+    
+    print('Available lessons:')
+
+    for lesson in lessonData[1:]:
+        print(f'\n  {lesson["time"]}')
+        print(f'  {lesson["title"][3]} -')
+        print(f'  {lesson["title"][1]} {lesson["title"][2]}')
+
+    return lessonData[1:]
+
+
+def waitUntil(selectedTime):
+    now = datetime.now()
+
+    if selectedTime > now:
+        print(f'\nSleeping until the time comes...')
+        time.sleep((selectedTime - now).total_seconds())
 
 
 
 def joinZoom():
+    wait.until(
+        EC.element_to_be_clickable((By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div/div/table/tbody/tr/td[5]/a'))
+    ).click()
+
     print('\nWaiting for zoom...')
     wait.until(EC.number_of_windows_to_be(2))
 
@@ -226,37 +238,46 @@ def joinZoom():
     print('Zoom starting...')
 
 
-
 if __name__ == '__main__':
+    driver = wait = original_window = 0
     login, password = getLoginAndPassword()
 
-    lessonHours = getTodaysLessonHours()
-    lessonHours = getClosestHour(lessonHours)
+    setupDriver()
 
-    print(f'Welcome! Today is {datetime.now().strftime("%A")}')
-    print(f'Today your have {len(lessonHours)} lecture')
-    print(f'In {" ".join([h[:5] for h in lessonHours])}')
+    try:
+        loginToSystem(login, password)
+        openEventCalendar()
 
-    driver  = webdriver.Firefox()
-    wait    = WebDriverWait(driver, 60)
+    except Exception as e:
+        print(e)
+        print('\nERROR on login')
+        driver.quit()
+        exit()
+    
+    lessons = getAvailableLessons()
 
-    driver.implicitly_wait(10)
-    driver.get('https://online.yildiz.edu.tr')
-    original_window = driver.current_window_handle
+    for lesson in lessons:
+        driver.quit()
 
-    for hour in lessonHours:
-        startHour = datetime.strptime(
-            f'{datetime.now().strftime("%d/%m/%y")} {hour}', '%d/%m/%y %H:%M:%S')
-        
-        waitUntil(startHour)
+        currentTime = datetime.now()
+        lessonStartTime = createTimeObject(lesson["startTime"])
+        lessonEndTime = createTimeObject(lesson["endTime"])
+
+        waitUntil(lessonStartTime)
+        setupDriver()
         
         try:
             loginToSystem(login, password)
-            startLesson()
+            openEventCalendar()
+
+            lesson["linkObj"].click()
             joinZoom()
+
+            waitUntil(lessonEndTime)
+
         except Exception as e:
             print(e)
-            driver.save_screenshot(f'{hour}-error.png')
+            driver.save_screenshot(f'{currentTime}-error.png')
             driver.quit()
             exit()
     
