@@ -130,3 +130,12 @@ dmypy.json
 
 account.txt
 classes.txt
+
+# texts and Bahadir personal stuff
+
+2classes.txt
+geckodriver.log
+Pipfile
+Pipfile.lock
+test.py
+settings.json
