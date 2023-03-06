@@ -8,6 +8,7 @@ import time
 
 #TODO: Eğer account file yoksa yaratsın ve console'a o file'a password ve login girmseini istesin
 #TODO: kalan fonklarin descr yazmak
+# FIXME: bazen login keyleri göndermiyor
 
 
 def getLoginAndPassword():
@@ -65,6 +66,7 @@ def setupDriver():
     global driver, wait, original_window
 
     driver  = webdriver.Firefox()
+    driver.minimize_window()
     wait    = WebDriverWait(driver, 60)
 
     driver.implicitly_wait(10)
@@ -80,7 +82,6 @@ def loginToSystem(login, password):
     the login and password passed to this function there. 
     Then he presses the login button.
     """
-    print('\nAttempt to login ...')
 
     textbox_mail = wait.until(
         EC.presence_of_element_located((By.ID, 'Data_Mail'))
@@ -91,10 +92,16 @@ def loginToSystem(login, password):
     login_button = wait.until(
         EC.element_to_be_clickable((By.TAG_NAME, 'button'))
     )
-    textbox_mail.send_keys(login) 
-    textbox_password.send_keys(password)
+
+    while (textbox_mail.get_attribute('value') != login 
+        and textbox_password.get_attribute('value') != password):
+
+        print('\nAttempt to login ...')
+        textbox_mail.send_keys(login) 
+        textbox_password.send_keys(password)
+
     login_button.click()
-    
+
     print('Succeful login')
 
 
@@ -102,7 +109,7 @@ def openEventCalendar():
     """
     Waiting for the end of the multi-layer loader. After finishing, it goes to the event page.
     """
-    print('\nLoading page...')
+    print('\nLoading even calendar page...')
 
     while True:
         try:
@@ -197,16 +204,19 @@ def getAvailableLessons():
     
     print('Available lessons:')
 
-    for lesson in lessonData[1:]:
-        print(f'\n  {lesson["time"]}')
-        print(f'  {lesson["title"][3]} -')
-        print(f'  {lesson["title"][1]} {lesson["title"][2]}')
+    for lesson in lessonData[index:]:
+        if len(lesson["title"]) > 3:
+            print(f'\n  {lesson["time"]}')
+            print(f'  {lesson["title"][3]} -')
+            print(f'  {lesson["title"][1]} {lesson["title"][2]}')
 
-    return lessonData[1:]
+    return lessonData[index:]
 
 
 def waitUntil(selectedTime):
     now = datetime.now()
+    #? For testing
+    # now = createTimeObject("13:00")
 
     if selectedTime > now:
         print(f'\nSleeping until the time comes...')
@@ -256,12 +266,12 @@ if __name__ == '__main__':
     
     lessons = getAvailableLessons()
 
-    for lesson in lessons:
+    for index in range(len(lessons)):
         driver.quit()
 
         currentTime = datetime.now()
-        lessonStartTime = createTimeObject(lesson["startTime"])
-        lessonEndTime = createTimeObject(lesson["endTime"])
+        lessonStartTime = createTimeObject(lessons[index]["startTime"])
+        lessonEndTime = createTimeObject(lessons[index]["endTime"])
 
         waitUntil(lessonStartTime)
         setupDriver()
@@ -269,8 +279,9 @@ if __name__ == '__main__':
         try:
             loginToSystem(login, password)
             openEventCalendar()
+            lessons = getAvailableLessons()
 
-            lesson["linkObj"].click()
+            lessons[index]["linkObj"].click()
             joinZoom()
 
             waitUntil(lessonEndTime)

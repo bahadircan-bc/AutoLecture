@@ -130,3 +130,5 @@ dmypy.json
 
 account.txt
 classes.txt
+*.png
+temp*
