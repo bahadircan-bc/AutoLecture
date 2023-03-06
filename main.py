@@ -3,7 +3,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 
 #TODO: Eğer account file yoksa yaratsın ve console'a o file'a password ve login girmseini istesin
@@ -216,20 +216,20 @@ def getAvailableLessons():
 def waitUntil(selectedTime):
     now = datetime.now()
     #? For testing
-    # now = createTimeObject("13:00")
+    now = createTimeObject("13:00")
 
     if selectedTime > now:
         print(f'\nSleeping until the time comes...')
         time.sleep((selectedTime - now).total_seconds())
 
 
-
 def joinZoom():
+    print('\nJoining to lesson...')
     wait.until(
-        EC.element_to_be_clickable((By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div/div/table/tbody/tr/td[5]/a'))
+        EC.element_to_be_clickable((By.XPATH, '/html/body/main/div/div[1]/div/div[7]/div/div/div/div/div/table/tbody/tr[1]/td[5]/a'))
     ).click()
-
     print('\nWaiting for zoom...')
+
     wait.until(EC.number_of_windows_to_be(2))
 
     for window_handle in driver.window_handles:
@@ -252,9 +252,9 @@ if __name__ == '__main__':
     driver = wait = original_window = 0
     login, password = getLoginAndPassword()
 
-    setupDriver()
 
     try:
+        setupDriver()
         loginToSystem(login, password)
         openEventCalendar()
 
@@ -267,19 +267,22 @@ if __name__ == '__main__':
     lessons = getAvailableLessons()
 
     for index in range(len(lessons)):
-        driver.quit()
-
+        
         currentTime = datetime.now()
         lessonStartTime = createTimeObject(lessons[index]["startTime"])
         lessonEndTime = createTimeObject(lessons[index]["endTime"])
+        #? For testing
+        # currentTime = createTimeObject('13:00')
 
-        waitUntil(lessonStartTime)
-        setupDriver()
-        
         try:
-            loginToSystem(login, password)
-            openEventCalendar()
-            lessons = getAvailableLessons()
+            if(lessonStartTime - currentTime >= timedelta(minutes=10)):
+                driver.quit()
+                waitUntil(lessonStartTime)
+                setupDriver()
+        
+                loginToSystem(login, password)
+                openEventCalendar()
+                lessons = getAvailableLessons()
 
             lessons[index]["linkObj"].click()
             joinZoom()
