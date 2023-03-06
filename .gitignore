@@ -132,3 +132,11 @@ account.txt
 classes.txt
 *.png
 temp*
+
+
+2classes.txt
+geckodriver.log
+Pipfile
+Pipfile.lock
+test.py
+settings.json

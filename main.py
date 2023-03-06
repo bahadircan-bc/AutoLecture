@@ -6,9 +6,27 @@ from selenium.webdriver.support import expected_conditions as EC
 from datetime import datetime, timedelta
 import time
 
+import platform
+
+#TODO: cross-platform file systems
+
+# if 'Windows' in platform.system():
+#
+#     import ctypes
+#     from ctypes.wintypes import MAX_PATH
+#
+# dll = ctypes.windll.shell32
+#         print(f'dll: {dll}')
+#         buf = ctypes.create_unicode_buffer(MAX_PATH + 1)
+#         print(f'buf: {buf}')
+#         if dll.SHGetSpecialFolderPathW(None, buf, 0x0005, False):
+#             print(buf.value)
+# #prints documents folder somehow
+#         else:
+#             print("Failure!")
+
 #TODO: Eğer account file yoksa yaratsın ve console'a o file'a password ve login girmseini istesin
 #TODO: kalan fonklarin descr yazmak
-# FIXME: bazen login keyleri göndermiyor
 
 
 def getLoginAndPassword():
@@ -48,6 +66,9 @@ def getLoginAndPassword():
             else:
                 print('Please enter password')
                 exit()
+    except FileNotFoundError:
+        print('account.txt not found')
+        exit()
     except:
         print('ERROR: Control your path and cwd (working directory)')
         exit()
