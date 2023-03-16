@@ -29,6 +29,8 @@ import platform
 #TODO: kalan fonklarin descr yazmak
 
 
+
+
 def getLoginAndPassword():
     """ opens account.txt and searches for strings containing 
     Password and Login takes the value following them and returns 
@@ -94,6 +96,7 @@ def setupDriver():
     driver.get('https://online.yildiz.edu.tr')
     original_window = driver.current_window_handle
     
+
     if driver != 0:
         print('Driver succesfully connected!')
 
@@ -237,10 +240,10 @@ def getAvailableLessons():
 def waitUntil(selectedTime):
     now = datetime.now()
     #? For testing
-    now = createTimeObject("13:00")
+    # now = createTimeObject("13:00")
 
     if selectedTime > now:
-        print(f'\nSleeping until the time comes...')
+        print(f'\nSleeping until the time comes... {selectedTime.strftime("%H:%M")}')
         time.sleep((selectedTime - now).total_seconds())
 
 
@@ -268,6 +271,13 @@ def joinZoom():
     join_button.click()
     print('Zoom starting...')
 
+def clickGotIt():
+    try:
+        wait.until(
+            EC.element_to_be_clickable((By.XPATH, '/html/body/div[6]/div/div/div/div[2]/div/div/button[1]'))
+        ).click()
+    except:
+        pass
 
 if __name__ == '__main__':
     driver = wait = original_window = 0
@@ -307,6 +317,7 @@ if __name__ == '__main__':
 
             lessons[index]["linkObj"].click()
             joinZoom()
+            clickGotIt()
 
             waitUntil(lessonEndTime)
 

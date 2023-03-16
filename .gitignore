@@ -140,3 +140,4 @@ Pipfile
 Pipfile.lock
 test.py
 settings.json
+/bugs
