@@ -40,7 +40,7 @@ def getLoginAndPassword():
     password = ''
 
     try:
-        with open('account.txt') as file:
+        with open('/home/strewen/Desktop/vscode_projects/Python/2023.03.01-lesson-bots/2023.03.01-coop-lesson-bot/account.txt') as file:
             lines = file.readlines()
 
             for line in lines:
@@ -89,7 +89,7 @@ def setupDriver():
     global driver, wait, original_window
 
     driver  = webdriver.Firefox()
-    driver.minimize_window()
+    # driver.minimize_window()
     wait    = WebDriverWait(driver, 60)
 
     driver.implicitly_wait(10)
@@ -206,6 +206,7 @@ def getLessonsData():
 
 
 def getAvailableLessons():
+    # FIXME: лучше возвращять так же и  прошедшие лекции
     print("\nGet available lessons...")
     lessonData = getLessonsData()
 
@@ -234,7 +235,8 @@ def getAvailableLessons():
             print(f'  {lesson["title"][3]} -')
             print(f'  {lesson["title"][1]} {lesson["title"][2]}')
 
-    return lessonData[index:]
+    return lessonData[:]
+    # return lessonData[index:]
 
 
 def waitUntil(selectedTime):
@@ -305,21 +307,40 @@ if __name__ == '__main__':
         #? For testing
         # currentTime = createTimeObject('13:00')
 
-        try:
-            if(lessonStartTime - currentTime >= timedelta(minutes=10)):
-                driver.quit()
-                waitUntil(lessonStartTime)
-                setupDriver()
+        if(lessonEndTime <= currentTime):
+            continue
         
-                loginToSystem(login, password)
-                openEventCalendar()
-                lessons = getAvailableLessons()
+        try:
+            # if(lessonStartTime - currentTime >= timedelta(minutes=10)):
+            #     driver.quit()
+            #     waitUntil(lessonStartTime)
+            #     setupDriver()
+        
+            #     loginToSystem(login, password)
+            #     openEventCalendar()
+            #     #FIXME yeni oluşan lessons da index 2 yerine bu sefer 3 geliyor olabilir
+            #     #FIXME nedeni bir dersi geçmiş olabiliyor
+            #     lessons = getAvailableLessons()
+
+            driver.quit()
+            waitUntil(lessonStartTime)
+            setupDriver()
+    
+            loginToSystem(login, password)
+            openEventCalendar()
+            #FIXME yeni oluşan lessons da index 2 yerine bu sefer 3 geliyor olabilir
+                #FIXME nedeni bir dersi geçmiş olabiliyor
+            lessons = getAvailableLessons()
 
             lessons[index]["linkObj"].click()
             joinZoom()
-            clickGotIt()
+            try:
+                clickGotIt()
+            except:
+                pass
 
             waitUntil(lessonEndTime)
+            # FIXME: лучше обновлять драйвер
 
         except Exception as e:
             print(e)
