@@ -117,8 +117,8 @@ def loginToSystem(login, password):
         EC.element_to_be_clickable((By.TAG_NAME, 'button'))
     )
 
-    while (textbox_mail.get_attribute('value') != login 
-        and textbox_password.get_attribute('value') != password):
+    while (textbox_mail.get_property('value') != login 
+        and textbox_password.get_property('value') != password):
 
         print('\nAttempt to login ...')
         textbox_mail.send_keys(login) 
@@ -183,6 +183,9 @@ def getLessonsData():
 
     index = 0
     for lesson in allLessons:
+
+        if 'fc-not-start' in lesson.get_attribute('class'): 
+            continue
 
         lessonTime      = lesson.find_element(By.CLASS_NAME, 'fc-time')
         lessonStartTime = lessonTime.get_attribute('data-start')
@@ -336,7 +339,7 @@ if __name__ == '__main__':
             joinZoom()
             try:
                 clickGotIt()
-            except:
+            except: 
                 pass
 
             waitUntil(lessonEndTime)
@@ -350,3 +353,5 @@ if __name__ == '__main__':
     
     driver.quit()
     exit()
+
+
