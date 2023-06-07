@@ -124,6 +124,8 @@ def loginToSystem(login, password):
         textbox_mail.send_keys(login) 
         textbox_password.send_keys(password)
 
+        time.sleep(0.1)
+
     login_button.click()
 
     print('Succeful login')
@@ -271,9 +273,31 @@ def joinZoom():
     current_url = driver.current_url
     new_url = current_url.replace('w/', 'wc/join/')
     driver.get(new_url)
-    join_button = wait.until(EC.element_to_be_clickable((By.ID, 'joinBtn')))
+    
+    try:
+        join_button = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'preview-join-button')))
+    except:
+        join_button = wait.until(EC.element_to_be_clickable((By.ID, 'joinBtn')))
+    
 
     join_button.click()
+
+    try:
+        print(1)
+        got_it_button = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[6]/div/div/div/div[2]/div/div/button[1]')))
+        got_it_button.click()
+        print(2)
+    except:
+        print('Lesson without recording')
+
+    try:
+        # time.sleep(5)
+        join_with_audio = wait.until(EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div[2]/div/div[2]/div/div[1]/div[1]/div[8]/div[3]/div/div[3]/div/button'))) 
+        join_with_audio.click()
+        # 
+    except Exception as e:
+        print(e)
+
     print('Zoom starting...')
 
 def clickGotIt():
